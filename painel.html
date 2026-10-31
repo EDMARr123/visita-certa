@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="icone.svg" type="image/svg+xml">
+<title>Painel Visita Certa</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<style>
+:root{--pri:#0f766e;--pri-cl:#e6f4f2;--ink:#14211f;--muted:#5d6b69;--line:#dbe5e3;--bg:#f3f6f5;--card:#fff;
+  --ok:#15803d;--ok-cl:#e8f6ec;--alerta:#b45309;--alerta-cl:#fff4e0;--erro:#b91c1c;--erro-cl:#fdecec}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;font-size:15px}
+header{background:var(--pri);color:#fff;padding:12px 16px}
+.topo{max-width:1200px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;justify-content:space-between}
+.topo b{font-size:19px;font-weight:900}
+.topo small{display:block;font-size:12.5px;opacity:.88}
+.filtros{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.filtros select,.filtros input{min-height:38px;border:0;border-radius:10px;padding:6px 10px;font:inherit;font-size:14px;color:var(--ink);background:#fff}
+.filtros button{min-height:38px;border:1.5px solid rgba(255,255,255,.8);background:transparent;color:#fff;border-radius:10px;padding:6px 12px;font:inherit;font-size:14px;font-weight:800;cursor:pointer}
+.periodos{display:flex;gap:4px;background:rgba(255,255,255,.15);border-radius:12px;padding:3px}
+.periodos button{border:0;min-height:32px;padding:4px 11px}
+.periodos button.on{background:#fff;color:var(--pri)}
+.datas{display:none;gap:6px;align-items:center}
+.datas.on{display:flex}
+.demo-faixa{background:#fef3c7;color:#7c4a03;font-size:12.5px;font-weight:700;text-align:center;padding:6px 12px}
+main{max-width:1200px;margin:0 auto;padding:16px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.kpi span{display:block;font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.kpi b{display:block;font-size:30px;font-weight:900;margin-top:4px;font-variant-numeric:tabular-nums}
+.kpi.alerta b{color:var(--alerta)}
+.kpi.agora b{color:var(--pri)}
+.grade{display:grid;grid-template-columns:1.1fr .9fr;gap:14px;margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;min-width:0}
+h2{font-size:13px;margin:0 0 10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:900;display:flex;justify-content:space-between;align-items:center;gap:8px}
+#mapa{height:380px;border-radius:10px}
+.agora{display:flex;flex-direction:column;gap:8px;max-height:380px;overflow:auto}
+.agora .it{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;padding:9px 11px}
+.agora .it span{flex:1;min-width:0}
+.agora .it b{display:block}
+.agora .it small{color:var(--muted)}
+.agora .t{font-weight:900;color:var(--pri);font-variant-numeric:tabular-nums}
+.pontinho{width:10px;height:10px;border-radius:50%;background:var(--ok);flex:none;box-shadow:0 0 0 4px var(--ok-cl)}
+.vazio{color:var(--muted);font-size:14px;margin:6px 0}
+table{width:100%;border-collapse:collapse}
+th,td{padding:9px 8px;border-top:1px solid var(--line);text-align:left;vertical-align:middle;font-size:14px}
+th{border-top:0;font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:900;white-space:nowrap}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr.clicavel{cursor:pointer}
+tr.clicavel:hover td{background:#f7faf9}
+tr.sel td{background:var(--pri-cl)}
+.tag{display:inline-block;font-size:11.5px;font-weight:900;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.tag.ok{background:var(--ok-cl);color:var(--ok)}
+.tag.alerta{background:var(--alerta-cl);color:var(--alerta)}
+.tag.erro{background:var(--erro-cl);color:var(--erro)}
+.tag.cinza{background:#eef1f0;color:var(--muted)}
+.fotos{display:flex;gap:6px}
+.fotos img{width:46px;height:46px;object-fit:cover;border-radius:8px;border:1px solid var(--line);cursor:zoom-in;background:#eee}
+.tabela-wrap{overflow:auto}
+.bt{min-height:34px;border:1.5px solid var(--pri);background:#fff;color:var(--pri);border-radius:10px;padding:4px 12px;font:inherit;font-size:13px;font-weight:800;cursor:pointer}
+/* entrada */
+.login{max-width:380px;margin:60px auto;background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px}
+.login h1{margin:0 0 6px;font-size:22px}
+.login p{color:var(--muted);margin:0 0 14px;font-size:14px}
+.login input{width:100%;min-height:46px;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit;font-size:16px}
+.login button{width:100%;min-height:48px;margin-top:12px;border:0;border-radius:12px;background:var(--pri);color:#fff;font:inherit;font-size:16px;font-weight:900;cursor:pointer}
+.erro-msg{color:var(--erro);font-weight:700;font-size:14px;margin-top:10px}
+/* foto ampliada */
+.zoom{position:fixed;inset:0;z-index:2000;background:rgba(10,20,18,.75);display:none;align-items:center;justify-content:center;padding:16px}
+.zoom.on{display:flex}
+.zoom .caixa{background:#fff;border-radius:16px;max-width:980px;width:100%;max-height:94vh;overflow:auto;padding:16px}
+.zoom .cab{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
+.zoom h3{margin:0;font-size:18px}
+.zoom .cab small{color:var(--muted)}
+.zoom .duas{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.zoom figure{margin:0}
+.zoom figure img{width:100%;border-radius:10px;background:#eee}
+.zoom figcaption{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.45}
+.zoom figcaption a{color:var(--pri);font-weight:800}
+.oculto{display:none!important}
+.tvis .c-ent .cel{display:none}
+@media(max-width:900px){.grade{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.zoom .duas{grid-template-columns:1fr}.kpi b{font-size:24px}#mapa{height:300px}
+  .esconde-cel{display:none}
+  /* no celular cada visita vira um cartão */
+  .tvis thead{display:none}
+  .tvis tr{display:grid;grid-template-columns:1fr auto;grid-template-areas:"prom fotos" "loja fotos" "hor fotos" "local fotos";gap:2px 10px;padding:10px 0;border-top:1px solid var(--line)}
+  .tvis td{border:0;padding:0}
+  .tvis .c-prom{grid-area:prom}.tvis .c-loja{grid-area:loja;color:var(--muted)}.tvis .c-local{grid-area:local;margin-top:4px}
+  .tvis .c-fotos{grid-area:fotos;align-self:center}
+  .tvis .c-ent{grid-area:hor}.tvis .c-sai,.tvis .c-temp{display:none}
+  .tvis .c-ent .cel{display:inline}}
+</style>
+</head>
+<body>
+<header>
+  <div class="topo">
+    <div><b>📍 Visita Certa · Painel</b><small id="atualizado">Acompanhamento dos promotores</small></div>
+    <div class="filtros oculto" id="filtros">
+      <div class="periodos" id="periodos">
+        <button type="button" data-p="hoje" class="on">Hoje</button>
+        <button type="button" data-p="ontem">Ontem</button>
+        <button type="button" data-p="7">7 dias</button>
+        <button type="button" data-p="per">Período</button>
+      </div>
+      <div class="datas" id="datas"><input type="date" id="de" aria-label="De"><input type="date" id="ate" aria-label="Até"></div>
+      <select id="fProm" aria-label="Promotor"><option value="">Todos os promotores</option></select>
+      <button type="button" id="btnAtualizar">↻ Atualizar</button>
+      <button type="button" id="btnExportar">⬇ Excel</button>
+    </div>
+  </div>
+</header>
+<div class="demo-faixa oculto" id="faixaDemo">MODO DEMONSTRAÇÃO — dados de exemplo (qualquer senha entra)</div>
+
+<div class="login oculto" id="telaLogin">
+  <h1>Painel do gestor</h1>
+  <p>Digite a senha do painel para ver as visitas dos promotores.</p>
+  <input type="password" id="senha" placeholder="Senha do painel" autocomplete="current-password">
+  <button type="button" id="btnLogin">Entrar</button>
+  <div class="erro-msg" id="erroLogin"></div>
+</div>
+
+<main class="oculto" id="telaPainel">
+  <div class="kpis">
+    <div class="kpi"><span>Visitas</span><b id="kVis">–</b></div>
+    <div class="kpi agora"><span>Em loja agora</span><b id="kAgora">–</b></div>
+    <div class="kpi"><span>Tempo médio na loja</span><b id="kMedio">–</b></div>
+    <div class="kpi alerta"><span>Alertas</span><b id="kAlertas">–</b></div>
+  </div>
+  <div class="grade">
+    <section class="card"><h2>Mapa das chegadas <span><span class="tag ok">● no local</span> <span class="tag alerta">● longe da loja</span></span></h2><div id="mapa"></div></section>
+    <section class="card"><h2>Em loja agora</h2><div class="agora" id="agora"></div></section>
+  </div>
+  <section class="card" style="margin-bottom:14px">
+    <h2>Por promotor</h2>
+    <div class="tabela-wrap"><table>
+      <thead><tr><th>Promotor</th><th class="n">Visitas</th><th class="n">Tempo em loja</th><th class="n esconde-cel">1ª chegada</th><th class="n esconde-cel">Última saída</th><th class="n">Alertas</th></tr></thead>
+      <tbody id="tProm"></tbody>
+    </table></div>
+  </section>
+  <section class="card">
+    <h2>Visitas <span id="contVis" style="text-transform:none;letter-spacing:0"></span></h2>
+    <div class="tabela-wrap"><table class="tvis">
+      <thead><tr><th>Promotor</th><th>Loja</th><th>Chegada</th><th>Saída</th><th class="n">Tempo</th><th>Local</th><th>Fotos</th></tr></thead>
+      <tbody id="tVis"></tbody>
+    </table></div>
+  </section>
+</main>
+
+<div class="zoom" id="zoom" role="dialog" aria-modal="true">
+  <div class="caixa">
+    <div class="cab"><div><h3 id="zTitulo"></h3><small id="zSub"></small></div><button type="button" class="bt" id="zFechar">Fechar</button></div>
+    <div class="duas" id="zFotos"></div>
+    <p id="zObs" style="margin:12px 0 0;font-size:14px"></p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="comum.js"></script>
+<script>
+(function(){
+'use strict';
+var $=function(id){ return document.getElementById(id); };
+var P={senha:'',periodo:'hoje',de:'',ate:'',prom:'',dados:null,mapa:null,camada:null};
+if(VC.DEMO) $('faixaDemo').classList.remove('oculto');
+try{ P.senha=sessionStorage.getItem('vc_painel_senha')||''; }catch(e){}
+
+function intervalo(){
+  var h=new Date(), d=new Date(h);
+  if(P.periodo==='hoje') return [VC.hojeStr(h),VC.hojeStr(h)];
+  if(P.periodo==='ontem'){ d.setDate(d.getDate()-1); return [VC.hojeStr(d),VC.hojeStr(d)]; }
+  if(P.periodo==='7'){ d.setDate(d.getDate()-6); return [VC.hojeStr(d),VC.hojeStr(h)]; }
+  return [$('de').value||VC.hojeStr(h),$('ate').value||VC.hojeStr(h)];
+}
+function entrar(){
+  var senha=$('senha').value||P.senha;
+  if(!senha && !VC.DEMO){ $('erroLogin').textContent='Digite a senha.'; return; }
+  P.senha=senha||'demo'; carregar(true);
+}
+$('btnLogin').addEventListener('click',entrar);
+$('senha').addEventListener('keydown',function(e){ if(e.key==='Enter') entrar(); });
+
+function carregar(primeira){
+  var r=intervalo();
+  $('atualizado').textContent='Carregando…';
+  VC.chamar('painel',{chave:P.senha,de:r[0],ate:r[1]}).then(function(res){
+    if(!res.ok){
+      $('telaLogin').classList.remove('oculto'); $('telaPainel').classList.add('oculto'); $('filtros').classList.add('oculto');
+      $('erroLogin').textContent=res.erro||'Senha incorreta.'; $('atualizado').textContent='Acompanhamento dos promotores';
+      try{ sessionStorage.removeItem('vc_painel_senha'); }catch(e){} return;
+    }
+    try{ sessionStorage.setItem('vc_painel_senha',P.senha); }catch(e){}
+    P.dados=res;
+    $('telaLogin').classList.add('oculto'); $('telaPainel').classList.remove('oculto'); $('filtros').classList.remove('oculto');
+    if(primeira){
+      $('fProm').innerHTML='<option value="">Todos os promotores</option>'+res.promotores.map(function(p){ return '<option value="'+VC.esc(p.id)+'">'+VC.esc(p.nome)+'</option>'; }).join('');
+      $('fProm').value=P.prom;
+    }
+    $('atualizado').textContent='Atualizado às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+(r[0]===r[1]?' · '+VC.dataBR(r[0]+'T12:00'):' · '+VC.dataBR(r[0]+'T12:00')+' a '+VC.dataBR(r[1]+'T12:00'));
+    render();
+  }).catch(function(){ $('atualizado').textContent='Sem conexão com a planilha. Tente atualizar.'; });
+}
+if(P.senha || VC.DEMO){ if(!P.senha) P.senha='demo'; carregar(true); } else $('telaLogin').classList.remove('oculto');
+
+/* ---------- cálculos ---------- */
+function lojaDe(v){ return (P.dados.lojas||[]).filter(function(l){ return l.id===v.lojaId; })[0]||{}; }
+function dentro(v,reg){ var l=lojaDe(v); return reg&&reg.dist!=null&&reg.dist<=(l.raio||150); }
+function alertas(v){
+  var a=[];
+  if(v.entrada && v.entrada.dist!=null && !dentro(v,v.entrada)) a.push('Chegada a '+VC.fmtDist(v.entrada.dist)+' da loja');
+  if(v.saida && v.saida.dist!=null && !dentro(v,v.saida)) a.push('Saída a '+VC.fmtDist(v.saida.dist)+' da loja');
+  if(VC.relogioSuspeito(v.entrada)||VC.relogioSuspeito(v.saida)) a.push('Relógio do celular diferente do servidor');
+  if(v.entrada && v.entrada.lat==null) a.push('Chegada sem GPS');
+  return a;
+}
+function minutos(v){
+  var e=new Date(VC.horaOficial(v.entrada)), s=v.saida?new Date(VC.horaOficial(v.saida)):new Date();
+  return (s-e)/60000;
+}
+function visitasFiltradas(){
+  return (P.dados.visitas||[]).filter(function(v){ return !P.prom||v.promotorId===P.prom; })
+    .sort(function(a,b){ return new Date(VC.horaOficial(b.entrada))-new Date(VC.horaOficial(a.entrada)); });
+}
+
+/* ---------- tela ---------- */
+function render(){
+  var vs=visitasFiltradas(), fechadas=vs.filter(function(v){ return v.saida; }), abertas=vs.filter(function(v){ return !v.saida && v.data===VC.hojeStr(); });
+  var nAlertas=vs.filter(function(v){ return alertas(v).length; }).length;
+  $('kVis').textContent=vs.length;
+  $('kAgora').textContent=abertas.length;
+  $('kMedio').textContent=fechadas.length?VC.duracao(fechadas.reduce(function(s,v){ return s+minutos(v); },0)/fechadas.length):'—';
+  $('kAlertas').textContent=nAlertas;
+  /* agora */
+  $('agora').innerHTML=abertas.length?abertas.map(function(v){
+    return '<div class="it"><i class="pontinho"></i><span><b>'+VC.esc(v.promotor)+'</b><small>'+VC.esc(v.loja)+' · desde '+VC.hora(VC.horaOficial(v.entrada))+'</small></span><em class="t">'+VC.duracao(minutos(v))+'</em></div>';
+  }).join(''):'<p class="vazio">Nenhum promotor em loja neste momento.</p>';
+  /* por promotor */
+  var porP={};
+  (P.dados.promotores||[]).forEach(function(p){ porP[p.id]={nome:p.nome,n:0,min:0,pri:null,ult:null,al:0}; });
+  vs.forEach(function(v){
+    var x=porP[v.promotorId]||(porP[v.promotorId]={nome:v.promotor,n:0,min:0,pri:null,ult:null,al:0});
+    x.n++; x.min+=minutos(v); if(alertas(v).length) x.al++;
+    var e=VC.horaOficial(v.entrada); if(!x.pri||e<x.pri) x.pri=e;
+    if(v.saida){ var s=VC.horaOficial(v.saida); if(!x.ult||s>x.ult) x.ult=s; }
+  });
+  var um=intervalo(); um=um[0]===um[1];
+  $('tProm').innerHTML=Object.keys(porP).map(function(id){ return [id,porP[id]]; })
+    .sort(function(a,b){ return b[1].n-a[1].n||a[1].nome.localeCompare(b[1].nome); })
+    .map(function(par){
+      var id=par[0], x=par[1];
+      return '<tr class="clicavel'+(P.prom===id?' sel':'')+'" data-p="'+VC.esc(id)+'"><td><b>'+VC.esc(x.nome)+'</b></td><td class="n">'+(x.n||'<span class="tag erro">0</span>')+'</td><td class="n">'+(x.n?VC.duracao(x.min):'—')+
+        '</td><td class="n esconde-cel">'+(x.pri?(um?'':VC.dataBR(x.pri).slice(0,5)+' ')+VC.hora(x.pri):'—')+'</td><td class="n esconde-cel">'+(x.ult?(um?'':VC.dataBR(x.ult).slice(0,5)+' ')+VC.hora(x.ult):'—')+
+        '</td><td class="n">'+(x.al?'<span class="tag alerta">'+x.al+'</span>':'<span class="tag cinza">0</span>')+'</td></tr>';
+    }).join('');
+  /* visitas */
+  $('contVis').textContent='('+vs.length+')';
+  $('tVis').innerHTML=vs.length?vs.map(function(v){
+    var al=alertas(v), e=v.entrada, s=v.saida;
+    var local=al.length?'<span class="tag alerta" title="'+VC.esc(al.join(' · '))+'">⚠ '+VC.esc(al[0])+'</span>':'<span class="tag ok">✓ no local</span>';
+    var fotos=[e&&e.foto?'<img src="'+VC.esc(VC.fotoUrl(e.foto))+'" alt="Foto da chegada" loading="lazy">':'',s&&s.foto?'<img src="'+VC.esc(VC.fotoUrl(s.foto))+'" alt="Foto da saída" loading="lazy">':''].join('');
+    var cel=' → '+(s?VC.hora(VC.horaOficial(s)):'em loja')+' · '+VC.duracao(minutos(v));
+    return '<tr class="clicavel" data-v="'+VC.esc(v.id)+'"><td class="c-prom"><b>'+VC.esc(v.promotor)+'</b></td><td class="c-loja">'+VC.esc(v.loja)+'</td><td class="c-ent">'+(um?'':VC.dataBR(VC.horaOficial(e)).slice(0,5)+' ')+VC.hora(VC.horaOficial(e))+
+      '<span class="cel">'+cel+'</span></td><td class="c-sai">'+(s?VC.hora(VC.horaOficial(s)):'<span class="tag ok">em loja</span>')+'</td><td class="n c-temp">'+VC.duracao(minutos(v))+'</td><td class="c-local">'+local+'</td><td class="c-fotos"><div class="fotos">'+fotos+'</div></td></tr>';
+  }).join(''):'<tr><td colspan="7"><p class="vazio">Nenhuma visita no período.</p></td></tr>';
+  mapa(vs);
+}
+function mapa(vs){
+  if(!window.L) return;
+  if(!P.mapa){
+    P.mapa=L.map('mapa',{scrollWheelZoom:false});
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(P.mapa);
+    P.camada=L.layerGroup().addTo(P.mapa);
+  }
+  P.camada.clearLayers();
+  var pts=[];
+  (P.dados.lojas||[]).forEach(function(l){
+    if(l.lat==null) return;
+    L.circle([l.lat,l.lon],{radius:l.raio||150,color:'#0f766e',weight:1,fillOpacity:.06}).bindTooltip(VC.esc(l.nome)).addTo(P.camada);
+    pts.push([l.lat,l.lon]);
+  });
+  vs.forEach(function(v){
+    var e=v.entrada; if(!e||e.lat==null) return;
+    var ok=dentro(v,e);
+    L.circleMarker([e.lat,e.lon],{radius:7,color:'#fff',weight:2,fillColor:ok?'#15803d':'#b45309',fillOpacity:.95})
+      .bindPopup('<b>'+VC.esc(v.promotor)+'</b><br>'+VC.esc(v.loja)+'<br>Chegada '+VC.hora(VC.horaOficial(e))+' · '+VC.fmtDist(e.dist)+' da loja').addTo(P.camada);
+    pts.push([e.lat,e.lon]);
+  });
+  if(pts.length) P.mapa.fitBounds(pts,{padding:[24,24],maxZoom:15}); else P.mapa.setView([-15.8,-47.9],4);
+  setTimeout(function(){ P.mapa.invalidateSize(); },60);
+}
+
+/* ---------- detalhe da visita ---------- */
+function abrirVisita(id){
+  var v=(P.dados.visitas||[]).filter(function(x){ return x.id===id; })[0]; if(!v) return;
+  $('zTitulo').textContent=v.promotor+' · '+v.loja;
+  $('zSub').textContent=VC.dataBR(VC.horaOficial(v.entrada))+' · '+(v.saida?VC.duracao(minutos(v))+' na loja':'ainda em loja');
+  function bloco(reg,rot){
+    if(!reg) return '<figure><figcaption><b>'+rot+':</b> ainda não registrada</figcaption></figure>';
+    var gps=reg.lat!=null?'<a href="https://www.google.com/maps?q='+reg.lat+','+reg.lon+'" target="_blank" rel="noopener">ver no mapa</a>':'sem GPS';
+    var extra=[];
+    if(reg.offline) extra.push('enviado depois (sem internet)');
+    if(VC.relogioSuspeito(reg)) extra.push('⚠ relógio do celular: '+VC.hora(reg.aparelho)+' · servidor: '+VC.hora(reg.servidor));
+    return '<figure>'+(reg.foto?'<img src="'+VC.esc(VC.fotoUrl(reg.foto))+'" alt="Foto '+rot+'">':'')+'<figcaption><b>'+rot+' às '+VC.hora(VC.horaOficial(reg))+'</b> · '+
+      (reg.dist!=null?VC.fmtDist(reg.dist)+' da loja':'distância desconhecida')+(reg.precisao!=null?' (GPS ±'+reg.precisao+' m)':'')+' · '+gps+(extra.length?'<br>'+VC.esc(extra.join(' · ')):'')+'</figcaption></figure>';
+  }
+  $('zFotos').innerHTML=bloco(v.entrada,'Chegada')+bloco(v.saida,'Saída');
+  $('zObs').innerHTML=v.obs?'<b>Observação:</b> '+VC.esc(v.obs):'';
+  $('zoom').classList.add('on');
+}
+$('tVis').addEventListener('click',function(e){ var tr=e.target.closest('tr[data-v]'); if(tr) abrirVisita(tr.getAttribute('data-v')); });
+$('tProm').addEventListener('click',function(e){
+  var tr=e.target.closest('tr[data-p]'); if(!tr) return;
+  var id=tr.getAttribute('data-p'); P.prom=P.prom===id?'':id; $('fProm').value=P.prom; render();
+});
+$('zFechar').addEventListener('click',function(){ $('zoom').classList.remove('on'); });
+$('zoom').addEventListener('click',function(e){ if(e.target===this) this.classList.remove('on'); });
+document.addEventListener('keydown',function(e){ if(e.key==='Escape') $('zoom').classList.remove('on'); });
+
+/* ---------- filtros ---------- */
+$('periodos').addEventListener('click',function(e){
+  var b=e.target.closest('button'); if(!b) return;
+  P.periodo=b.getAttribute('data-p');
+  [].forEach.call(this.querySelectorAll('button'),function(x){ x.classList.toggle('on',x===b); });
+  $('datas').classList.toggle('on',P.periodo==='per');
+  if(P.periodo==='per' && !$('de').value){ var d=new Date(); d.setDate(1); $('de').value=VC.hojeStr(d); $('ate').value=VC.hojeStr(); }
+  carregar(false);
+});
+$('de').addEventListener('change',function(){ carregar(false); });
+$('ate').addEventListener('change',function(){ carregar(false); });
+$('fProm').addEventListener('change',function(){ P.prom=this.value; render(); });
+$('btnAtualizar').addEventListener('click',function(){ carregar(false); });
+setInterval(function(){ if(P.dados && P.periodo==='hoje') carregar(false); },120000);
+
+/* ---------- Excel (CSV) ---------- */
+$('btnExportar').addEventListener('click',function(){
+  var linhas=[['Data','Promotor','Loja','Chegada','Saída','Tempo (min)','Distância chegada (m)','Distância saída (m)','Alertas','Observação','Foto chegada','Foto saída','GPS chegada','GPS saída']];
+  visitasFiltradas().forEach(function(v){
+    var e=v.entrada||{}, s=v.saida||{};
+    linhas.push([VC.dataBR(VC.horaOficial(e)),v.promotor,v.loja,VC.hora(VC.horaOficial(e)),v.saida?VC.hora(VC.horaOficial(s)):'',Math.round(minutos(v)),
+      e.dist==null?'':e.dist,s.dist==null?'':s.dist,alertas(v).join(' | '),v.obs||'',
+      String(e.foto||'').indexOf('http')===0?e.foto:'',String(s.foto||'').indexOf('http')===0?s.foto:'',
+      e.lat!=null?e.lat+','+e.lon:'',s.lat!=null?s.lat+','+s.lon:'']);
+  });
+  var csv='﻿'+linhas.map(function(l){ return l.map(function(c){ c=String(c==null?'':c); return /[";\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c; }).join(';'); }).join('\r\n');
+  var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  var r=intervalo(); a.download='visitas_'+r[0]+(r[0]!==r[1]?'_a_'+r[1]:'')+'.csv'; a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); },2000);
+});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "Visita Certa",
+  "short_name": "Visita Certa",
+  "description": "Registro de chegada e saída de promotores com hora, localização e foto.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3f6f5",
+  "theme_color": "#0f766e",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "icone.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
